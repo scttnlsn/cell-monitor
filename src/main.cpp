@@ -2,9 +2,10 @@
 #include <SoftwareSerial.h>
 
 // this address should be unique for each cell monitor on the serial bus
-#define CELL_ADDRESS 0x1
+#define CELL_ADDRESS 0b0001
 
-#define CMD_SEND_VOLTAGE 0x1
+#define CMD_SEND_VOLTAGE 0b0001
+#define CMD_BALANCE 0b0010
 
 // serial data is inverted since the optocoupler also inverts it
 SoftwareSerial serial(3, 4, true); // rx, tx, inverse logic
@@ -49,9 +50,27 @@ void send_voltage(void) {
   serial.write(vcc & 0xFF); // LSB
 }
 
+// TODO: put a watchdog timer on balancing
+// balancing should be auto-disabled after N seconds
+// receiving a balance command resets this timer
+
+void enable_balancing(void) {
+  digitalWrite(0, HIGH);
+}
+
+void disable_balancing(void) {
+  digitalWrite(0, LOW);
+}
+
 void process_command(uint8_t command) {
   if (command & CMD_SEND_VOLTAGE) {
     send_voltage();
+  }
+
+  if (command & CMD_BALANCE) {
+    enable_balancing();
+  } else {
+    disable_balancing();
   }
 }
 
@@ -72,9 +91,13 @@ void process_input() {
 }
 
 void setup() {
+  // serial pins
   pinMode(3, INPUT);
   pinMode(4, OUTPUT);
+
+  // balancing pin
   pinMode(0, OUTPUT);
+  digitalWrite(0, LOW);
 
   serial.begin(9600);
 }

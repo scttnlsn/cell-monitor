@@ -1,18 +1,21 @@
-import serial
+import argparse
+from serial import Serial
 import struct
 
-ser = serial.Serial(
-    port = '/dev/cu.usbserial-A9GBVLD5',
-    baudrate = 9600)
+COMMAND = 0x1
 
-address = 0x1
-command = 0x1
+parser = argparse.ArgumentParser(description='read cell monitor voltage')
+parser.add_argument('address', type=int, help='cell monitor address')
+parser.add_argument('--port', help='serial device name')
 
-byte = (address << 4) | command
+args = parser.parse_args()
+serial = Serial(port = args.port, baudrate = 9600)
+byte = struct.pack('!B', (args.address << 4) | COMMAND)
 
-ser.write(struct.pack('!B', byte))
+def read_voltage():
+    serial.write(byte)
+    values = map(ord, serial.read(2))
+    return (values[0] << 8) | values[1]
 
-values = map(ord, ser.read(2))
-voltage = (values[0] << 8) | values[1]
-
-print(voltage)
+if __name__ == '__main__':
+    print(read_voltage())
