@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+#include <avr/wdt.h>
 
 // this address should be unique for each cell monitor on the serial bus
 #define CELL_ADDRESS 0b0001
@@ -91,6 +92,9 @@ void process_input() {
 }
 
 void setup() {
+  // 1 second watchdog
+  wdt_enable(WDTO_1S);
+
   // serial pins
   pinMode(3, INPUT);
   pinMode(4, OUTPUT);
@@ -104,4 +108,5 @@ void setup() {
 
 void loop() {
   process_input();
+  wdt_reset();
 }
