@@ -51,16 +51,31 @@ void send_voltage(void) {
   serial.write(vcc & 0xFF); // LSB
 }
 
-// TODO: put a watchdog timer on balancing
-// balancing should be auto-disabled after N seconds
-// receiving a balance command resets this timer
+uint32_t enable_time;
 
 void enable_balancing(void) {
+  enable_time = millis();
   digitalWrite(0, HIGH);
 }
 
 void disable_balancing(void) {
   digitalWrite(0, LOW);
+}
+
+void autodisable_balancing(void) {
+  uint32_t now = millis();
+  uint32_t balancing_time = 0;
+
+  if (now < enable_time) {
+    balancing_time = enable_time - now;
+  } else {
+    balancing_time = now - enable_time;
+  }
+
+  // 10 second auto-disable
+  if (balancing_time >= 10000) {
+    disable_balancing();
+  }
 }
 
 void process_command(uint8_t command) {
@@ -109,4 +124,5 @@ void setup() {
 void loop() {
   process_input();
   wdt_reset();
+  autodisable_balancing();
 }
