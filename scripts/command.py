@@ -3,27 +3,43 @@ from serial import Serial
 import struct
 import time
 
-CMD_READ_VOLTAGE = 0b0001
-CMD_BALANCE = 0b0010
-
 parser = argparse.ArgumentParser(description='enable 5 second balancing for a cell')
 parser.add_argument('address', type=int, help='cell monitor address')
 parser.add_argument('command', type=int, help='cell monitor command')
 parser.add_argument('--port', help='serial device name')
+parser.add_argument('--read', type=int, help='read given number of bytes after sending command')
+parser.add_argument('--write', type=int, help='write 2-byte value after sending command')
 
-args = parser.parse_args()
-serial = Serial(port = args.port, baudrate = 9600)
+class CellMonitor(object):
 
-def send_command():
-    byte = struct.pack('!B', (args.address << 4) | args.command)
-    serial.write(byte)
+    def __init__(self, port):
+        self.serial = Serial(port = port, baudrate = 9600)
 
-def read_voltage():
-    values = map(ord, serial.read(2))
-    return (values[0] << 8) | values[1]
+    def send_command(self, address, command):
+        byte = struct.pack('!B', (address << 4) | command)
+        self.serial.write(byte)
+
+    def read_value(self, n):
+        values = map(ord, self.serial.read(n))
+        result = 0
+
+        for value in values:
+            result = (result << 8) | value
+
+        return result
+
+    def write_value(self, value):
+        self.serial.write(value >> 8)
+        self.serial.write(value & 0xFF)
 
 if __name__ == '__main__':
-    send_command();
+    args = parser.parse_args()
 
-    if args.command & CMD_READ_VOLTAGE:
-        print(read_voltage())
+    cell_monitor = CellMonitor(args.port)
+    cell_monitor.send_command(args.address, args.command);
+
+    if args.write:
+        cell_monitor.write_value(args.write)
+
+    if args.read:
+        print(cell_monitor.read_value(args.read))
