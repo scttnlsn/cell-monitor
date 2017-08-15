@@ -49,7 +49,7 @@ make REF_VOLTAGE=1100
 
 ## Serial protocol
 
-Commands are sent from a host controller to the cell monitor.  Multiple monitors can share a single serial bus since each monitor has a unique 4-bit address.  Each command includes the cell address bits and only the corresponding cell monitor will respond.
+Commands are sent from a host controller to the cell monitor via a 9600 baud isolated serial line.  Multiple monitors can share a single serial bus since each monitor has a unique 4-bit address.  Each command includes the cell address bits and only the corresponding cell monitor will respond.
 
 Each command byte includes a 4 bit cell address (CA) and a 4 bit command code (CC):
 
