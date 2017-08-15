@@ -36,7 +36,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     cell_monitor = CellMonitor(args.port)
-    cell_monitor.send_command(args.address, args.command);
+    cell_monitor.send_command(args.address, args.command)
 
     if args.write:
         cell_monitor.write_value(args.write)

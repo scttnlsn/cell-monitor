@@ -8,11 +8,11 @@
 
 #define CMD_SEND_VOLTAGE (1 << 0)
 #define CMD_BALANCE (1 << 1)
+
 #define adc_disable() (ADCSRA &= ~(1 << ADEN))
 #define adc_enable() (ADCSRA |=  (1 << ADEN))
 
-// serial data is inverted since the optocoupler also inverts it
-SoftwareSerial serial(3, 4, true); // rx, tx, inverse logic
+SoftwareSerial serial(3, 4); // RX, TX
 
 uint16_t read_vcc(void) {
   // use VCC as reference
