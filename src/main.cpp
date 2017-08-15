@@ -3,8 +3,18 @@
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 
+#define DO_EXPAND(VAL) VAL ## 1
+#define EXPAND(VAL) DO_EXPAND(VAL)
+
 // this address should be unique for each cell monitor on the serial bus
+#if !defined(CELL_ADDRESS) || (EXPAND(CELL_ADDRESS) == 1)
 #define CELL_ADDRESS 0b0001
+#endif
+
+// this value should be calibrated for more accurate voltage measurements
+#if !defined(REF_VOLTAGE) || (EXPAND(REF_VOLTAGE) == 1)
+#define REF_VOLTAGE 1100
+#endif
 
 #define CMD_SEND_VOLTAGE (1 << 0)
 #define CMD_BALANCE (1 << 1)
@@ -32,9 +42,7 @@ uint16_t read_vcc(void) {
   uint8_t high = ADCH;
   uint16_t result = (high << 8) | low;
 
-  // return Vcc in mV (1125300 = 1.1 * 1023 * 1000)
-  // TODO: calibrate this value
-  return 1125300L / result;
+  return (REF_VOLTAGE * 1023L) / result;
 }
 
 uint16_t read_vcc_avg(void) {
