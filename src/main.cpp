@@ -1,12 +1,15 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+#include <avr/sleep.h>
 #include <avr/wdt.h>
 
 // this address should be unique for each cell monitor on the serial bus
 #define CELL_ADDRESS 0b0001
 
-#define CMD_SEND_VOLTAGE 0b0001
-#define CMD_BALANCE 0b0010
+#define CMD_SEND_VOLTAGE (1 << 0)
+#define CMD_BALANCE (1 << 1)
+#define adc_disable() (ADCSRA &= ~(1 << ADEN))
+#define adc_enable() (ADCSRA |=  (1 << ADEN))
 
 // serial data is inverted since the optocoupler also inverts it
 SoftwareSerial serial(3, 4, true); // rx, tx, inverse logic
@@ -52,14 +55,17 @@ void send_voltage(void) {
 }
 
 uint32_t enable_time;
+uint8_t balancing = 0;
 
 void enable_balancing(void) {
   enable_time = millis();
   digitalWrite(0, HIGH);
+  balancing = 1;
 }
 
 void disable_balancing(void) {
   digitalWrite(0, LOW);
+  balancing = 0;
 }
 
 void autodisable_balancing(void) {
@@ -76,6 +82,19 @@ void autodisable_balancing(void) {
   if (balancing_time >= 10000) {
     disable_balancing();
   }
+}
+
+void sleep(void) {
+  adc_disable();
+  wdt_reset();
+  wdt_disable();
+  sleep_enable();
+  sleep_cpu();
+
+  // wake up
+  adc_enable();
+  wdt_enable(WDTO_1S);
+  wdt_reset();
 }
 
 void process_command(uint8_t command) {
@@ -107,6 +126,8 @@ void process_input() {
 }
 
 void setup() {
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+
   // 1 second watchdog
   wdt_enable(WDTO_1S);
 
@@ -125,4 +146,8 @@ void loop() {
   process_input();
   wdt_reset();
   autodisable_balancing();
+
+  if (!balancing) {
+    sleep();
+  }
 }
