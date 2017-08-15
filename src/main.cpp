@@ -1,7 +1,15 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+
 #include <avr/sleep.h>
 #include <avr/wdt.h>
+
+#include "balance.h"
+#include "command.h"
+
+#define BALANCE_PIN 0
+#define RX_PIN 3
+#define TX_PIN 4
 
 #define DO_EXPAND(VAL) VAL ## 1
 #define EXPAND(VAL) DO_EXPAND(VAL)
@@ -16,13 +24,12 @@
 #define REF_VOLTAGE 1100
 #endif
 
-#define CMD_SEND_VOLTAGE (1 << 0)
-#define CMD_BALANCE (1 << 1)
-
 #define adc_disable() (ADCSRA &= ~(1 << ADEN))
 #define adc_enable() (ADCSRA |=  (1 << ADEN))
 
-SoftwareSerial serial(3, 4); // RX, TX
+SoftwareSerial serial(RX_PIN, TX_PIN);
+CommandProcessor commands(CELL_ADDRESS, serial);
+Balancer balancer(BALANCE_PIN);
 
 uint16_t read_vcc(void) {
   // use VCC as reference
@@ -50,7 +57,6 @@ uint16_t read_vcc_avg(void) {
 
   for (int i = 0; i < 8; i++) {
     sum += read_vcc();
-    delay(i);
   }
 
   return sum / 8;
@@ -62,33 +68,19 @@ void send_voltage(void) {
   serial.write(vcc & 0xFF); // LSB
 }
 
-uint32_t enable_time;
-uint8_t balancing = 0;
+void process_input(void) {
+  uint8_t command = commands.update();
 
-void enable_balancing(void) {
-  enable_time = millis();
-  digitalWrite(0, HIGH);
-  balancing = 1;
-}
+  if (command) {
+    if (command & COMMAND_SEND_VOLTAGE) {
+      send_voltage();
+    }
 
-void disable_balancing(void) {
-  digitalWrite(0, LOW);
-  balancing = 0;
-}
-
-void autodisable_balancing(void) {
-  uint32_t now = millis();
-  uint32_t balancing_time = 0;
-
-  if (now < enable_time) {
-    balancing_time = enable_time - now;
-  } else {
-    balancing_time = now - enable_time;
-  }
-
-  // 10 second auto-disable
-  if (balancing_time >= 10000) {
-    disable_balancing();
+    if (command & COMMAND_BALANCE_ON) {
+      balancer.enable();
+    } else {
+      balancer.disable();
+    }
   }
 }
 
@@ -105,47 +97,11 @@ void sleep(void) {
   wdt_reset();
 }
 
-void process_command(uint8_t command) {
-  if (command & CMD_SEND_VOLTAGE) {
-    send_voltage();
-  }
-
-  if (command & CMD_BALANCE) {
-    enable_balancing();
-  } else {
-    disable_balancing();
-  }
-}
-
-void process_input() {
-  if (serial.available()) {
-    uint8_t value = serial.read();
-
-    if (value > 0) {
-      uint8_t address = value >> 4;
-
-      if (address == CELL_ADDRESS) {
-        uint8_t command = value & 0xF;
-
-        process_command(command);
-      }
-    }
-  }
-}
-
 void setup() {
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
 
   // 1 second watchdog
   wdt_enable(WDTO_1S);
-
-  // serial pins
-  pinMode(3, INPUT);
-  pinMode(4, OUTPUT);
-
-  // balancing pin
-  pinMode(0, OUTPUT);
-  digitalWrite(0, LOW);
 
   serial.begin(9600);
 }
@@ -153,8 +109,8 @@ void setup() {
 void loop() {
   process_input();
   wdt_reset();
-  autodisable_balancing();
 
+  uint8_t balancing = balancer.update();
   if (!balancing) {
     sleep();
   }
