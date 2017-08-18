@@ -4,13 +4,11 @@
 #include <Arduino.h>
 #include <Stream.h>
 
-#define COMMAND_SEND_VOLTAGE (1 << 0)
-#define COMMAND_BALANCE_ON (1 << 1)
-
 class CommandProcessor {
  public:
   CommandProcessor(uint8_t address, Stream &stream);
   uint8_t update();
+  void reply(uint16_t value);
 
  private:
   uint8_t _address;

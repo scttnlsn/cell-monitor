@@ -19,3 +19,8 @@ uint8_t CommandProcessor::update() {
 
   return 0;
 }
+
+void CommandProcessor::reply(uint16_t value) {
+  _stream.write(value >> 8); // MSB
+  _stream.write(value & 0xFF); // LSB
+}

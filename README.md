@@ -60,10 +60,14 @@ Each command byte includes a 4 bit cell address (CA) and a 4 bit command code (C
 The command code consists of the following bits:
 
 ```
-| RSVD | RSVD | BALANCE_ON | SEND_VOLTAGE |
+| RSVD | BALANCE_ON | SEND_TEMP | SEND_VOLTAGE |
 ```
 
 * `SEND_VOLTAGE` - when set to `1` the cell monitor will reply with a 2-byte voltage in mV (most-significant byte first)
+* `SEND_TEMP` - when set to `1` the cell monitor will reply with a 2-byte temperature in degrees celcius * 100 (most-significant byte first)
 * `BALANCE_ON` - when set to `1` the cell monitor will switch on the balancing FET, when set to `0` the cell monitor will switch off the balancing FET
+* `RSVD` - reserved for future use
+
+If you've set both the `SEND_TEMP` and `SEND_VOLTAGE` bits then you'll receive 4 bytes (voltage first and then temp).
 
 The cell monitor has an internal watchdog that automatically turns off the balancing FET after 10 seconds.  If you'd like to balance for a longer period of time then you need to repeatedly send a command with the `BALANCE_ON` bit set to `1`.
