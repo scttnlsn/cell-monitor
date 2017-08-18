@@ -2,7 +2,7 @@
 
 Battery cell monitor and balancer based on the ATTiny85 MCU.
 
-* reads cell voltage
+* reads cell voltage and temperature
 * switches balancing FET
 * communicates with host controller via isolated serial protocol
 * low power consumption (<1mA when idle, ~2mA while active)
