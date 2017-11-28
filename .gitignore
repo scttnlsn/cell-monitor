@@ -1,2 +1,5 @@
 .pioenvs
 .piolibdeps
+
+hardware/cell-monitor-cache.lib
+hardware/*.bak
