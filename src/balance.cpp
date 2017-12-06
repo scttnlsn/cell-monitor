@@ -31,5 +31,9 @@ uint8_t Balancer::update() {
     disable();
   }
 
+  return enabled();
+}
+
+uint8_t Balancer::enabled() {
   return _enabled;
 }

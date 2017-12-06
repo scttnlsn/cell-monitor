@@ -2,7 +2,7 @@
 REF_VOLTAGE ?= 1100
 
 # this address should be unique for each cell monitor on the serial bus
-CELL_ADDRESS ?= 1
+CELL_ADDRESS ?= 3
 
 build:
 	REF_VOLTAGE=${REF_VOLTAGE} CELL_ADDRESS=${CELL_ADDRESS} pio run

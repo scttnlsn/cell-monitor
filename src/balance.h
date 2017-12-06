@@ -11,6 +11,7 @@ class Balancer {
   void enable();
   void disable();
   uint8_t update();
+  uint8_t enabled();
 
  private:
   uint8_t _pin;

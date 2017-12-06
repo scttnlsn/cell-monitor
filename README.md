@@ -2,9 +2,9 @@
 
 Battery cell monitor and balancer based on the ATTiny85 MCU.
 
-* reads cell voltage and temperature
+* reads cell voltage and temperature (using built-in 10-bit ADC on the ATTiny)
 * switches balancing FET
-* communicates with host controller via isolated serial protocol
+* communicates with host controller via isolated I2C (supporting many cell monitors on a single bus)
 * low power consumption (<1mA when idle, ~2mA while active)
 
 ## Requirements
@@ -21,9 +21,49 @@ make
 make flash
 ```
 
+## Communication
+
+The cell monitor implements a standard 100kHz I2C interface and acts as a slave device.
+The I2C address is 7 bits and is configured when flashing the firmware (see config).
+
+**Registers:**
+
+* `STATUS`
+  * address = `0x01`
+  * description
+  * bits = `RSVD | RSVD | RSVD | RSVD | RSVD | RSVD | RSVD | BALANCE`
+  * `BALANCE`:
+    * 1 when balancing FET is enabled
+    * 0 when balancing FET is disabled
+    * write a 1 to enable balancing FET
+    * write a 0 to disable balancing FET
+    * There's an internal watchdog that automatically turns off the balancing FET after 10 seconds.  In order to enable balancing for longer periods of time the host controller needs to repeatedly write a 1 to the `BALANCE` bit in this register.
+* `VOLTAGE_HIGH`
+  * address = `0x02`
+  * description = upper 2 bits of 10-bit voltage reading
+  * bits = `RSVD | RSVD | RSVD | RSVD | RSVD | RSVD | V10 | V9`
+  * read-only
+* `VOLTAGE_LOW`
+  * address = `0x03`
+  * description = lower 8 bits of 10-bit voltage reading
+  * bits = `V8 | V7 | V6 | V5 | V4 | V3 | V2 | V1`
+  * read-only
+  * when 2 bytes are read from register `VOLTAGE_LOW`, the `VOLTAGE_HIGH` and `VOLTAGE_LOW` values are returned atomically
+* `TEMP_HIGH`
+  * address = `0x04`
+  * description = upper 2 bits of 10-bit temperature reading
+  * bits = `RSVD | RSVD | RSVD | RSVD | RSVD | RSVD | V10 | V9`
+  * read-only
+* `TEMP_LOW`
+  * address = `0x05`
+  * description = lower 8 bits of 10-bit temperature reading
+  * bits = `T8 | T7 | T6 | T5 | T4 | T3 | T2 | T1`
+  * read-only
+  * when 2 bytes are read from register `TEMP_HIGH`, the `TEMP_HIGH` and `TEMP_LOW` values are returned atomically
+
 ## Config
 
-Each cell monitor on a shared serial bus needs a unique 4-bit address.  To program the address for a given monitor, pass the `CELL_ADDRESS` environment variable when building:
+Each cell monitor on a shared I2C bus needs a unique 7-bit address.  To program the address for a given monitor, pass the `CELL_ADDRESS` environment variable when building:
 
 ```
 make CELL_ADDRESS=1
@@ -46,28 +86,3 @@ This value should be used as the internal reference voltage.  Pass the `REF_VOLT
 ```
 make REF_VOLTAGE=1100
 ```
-
-## Serial protocol
-
-Commands are sent from a host controller to the cell monitor via a 9600 baud isolated serial line.  Multiple monitors can share a single serial bus since each monitor has a unique 4-bit address.  Each command includes the cell address bits and only the corresponding cell monitor will respond.
-
-Each command byte includes a 4 bit cell address (CA) and a 4 bit command code (CC):
-
-```
-| CA 4 | CA 3 | CA 2 | CA 1 | CC 4 | CC 3 | CC 2 | CC 1 |
-```
-
-The command code consists of the following bits:
-
-```
-| RSVD | BALANCE_ON | SEND_TEMP | SEND_VOLTAGE |
-```
-
-* `SEND_VOLTAGE` - when set to `1` the cell monitor will reply with a 2-byte voltage in mV (most-significant byte first)
-* `SEND_TEMP` - when set to `1` the cell monitor will reply with a 2-byte temperature in degrees celcius * 100 (most-significant byte first)
-* `BALANCE_ON` - when set to `1` the cell monitor will switch on the balancing FET, when set to `0` the cell monitor will switch off the balancing FET
-* `RSVD` - reserved for future use
-
-If you've set both the `SEND_TEMP` and `SEND_VOLTAGE` bits then you'll receive 4 bytes (voltage first and then temp).
-
-The cell monitor has an internal watchdog that automatically turns off the balancing FET after 10 seconds.  If you'd like to balance for a longer period of time then you need to repeatedly send a command with the `BALANCE_ON` bit set to `1`.

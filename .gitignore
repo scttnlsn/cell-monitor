@@ -2,4 +2,5 @@
 .piolibdeps
 
 hardware/cell-monitor-cache.lib
-hardware/*.bak
+hardware/*bak
+hardware/gerbers
