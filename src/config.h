@@ -5,8 +5,8 @@
 
 #define BALANCE_PIN 0
 #define THERMISTOR_PIN 1
-#define RX_PIN 3
-#define TX_PIN 4
+#define RX_PIN 4
+#define TX_PIN 3
 
 #define ADC_NUM_SAMPLES 10
 

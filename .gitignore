@@ -1,2 +1,5 @@
 .pioenvs
 .piolibdeps
+.python-version
+
+hardware/*bak
