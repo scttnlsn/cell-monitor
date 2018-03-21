@@ -3,7 +3,7 @@ from serial import Serial
 import struct
 import time
 
-parser = argparse.ArgumentParser(description='enable 5 second balancing for a cell')
+parser = argparse.ArgumentParser(description='communicate with cell monitor')
 parser.add_argument('address', type=int, help='cell monitor address')
 parser.add_argument('command', type=int, help='cell monitor command')
 parser.add_argument('--port', help='serial device name')
