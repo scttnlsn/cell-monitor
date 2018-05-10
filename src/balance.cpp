@@ -17,7 +17,11 @@ void Balancer::disable() {
   _enabled = 0;
 }
 
-uint8_t Balancer::update() {
+bool Balancer::enabled() {
+  return _enabled;
+}
+
+bool Balancer::update() {
   uint32_t now = millis();
   uint32_t balancing_time = 0;
 
@@ -31,5 +35,5 @@ uint8_t Balancer::update() {
     disable();
   }
 
-  return _enabled;
+  return enabled();
 }

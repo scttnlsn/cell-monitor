@@ -18,6 +18,7 @@ Battery cell monitor and balancer based on the ATTiny85 MCU.
 
 ```
 make
+make fuse
 make flash
 ```
 

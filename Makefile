@@ -1,16 +1,13 @@
-# this value should be calibrated for more accurate voltage measurements
-REF_VOLTAGE ?= 1100
-
-# this address should be unique for each cell monitor on the serial bus
-CELL_ADDRESS ?= 1
-
 build:
-	REF_VOLTAGE=${REF_VOLTAGE} CELL_ADDRESS=${CELL_ADDRESS} pio run
+	pio run
 
 clean:
 	pio run -t clean
 
-flash:
-	REF_VOLTAGE=${REF_VOLTAGE} CELL_ADDRESS=${CELL_ADDRESS} pio run -t upload
+fuse:
+	avrdude -v -p attiny85 -c stk500v1 -P /dev/ttyUSB* -c stk500v1 -b 19200 -U lfuse:w:0xe2:m -U hfuse:w:0xdf:m -U efuse:w:0xff:m
 
-.PHONY: build clean flash
+flash:
+	pio run -t upload
+
+.PHONY: build clean fuse flash
