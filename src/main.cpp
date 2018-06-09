@@ -56,23 +56,23 @@ void loop() {
     if (protocol.handle(data, &packet)) {
       switch (packet.reg) {
         case REG_VOLTAGE_REF:
-          // if (packet.write) {
-          //   adc::set_ref_voltage(packet.value);
-          // }
+          if (packet.write) {
+            adc::set_ref_voltage(packet.value);
+          }
           protocol.respond(&packet, adc::ref_voltage());
           break;
 
         case REG_VOLTAGE:
-          // if (packet.write) {
-          //   adc::calibrate_voltage(packet.value);
-          // }
+          if (packet.write) {
+            adc::calibrate_voltage(packet.value);
+          }
           protocol.respond(&packet, adc::read_vcc());
           break;
 
         case REG_TEMP:
-          // if (packet.write) {
-          //   // TODO: calibrate temp
-          // }
+          if (packet.write) {
+            // TODO: calibrate temp
+          }
           protocol.respond(&packet, adc::read_temp());
           break;
 

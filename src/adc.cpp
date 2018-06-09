@@ -44,12 +44,13 @@ namespace adc {
   }
 
   void calibrate_voltage(uint16_t voltage) {
-    uint16_t ref_voltage = (uint32_t)(voltage * _ref_voltage) / read_vcc();
+    _ref_voltage = BANDGAP_NOMINAL_VOLTAGE;
+    uint16_t ref_voltage = (uint32_t) voltage * _ref_voltage / read_vcc();
     set_ref_voltage(ref_voltage);
   }
 
   uint16_t read_vcc() {
-    uint16_t result;
+    uint32_t result;
 
     for (int i = 0; i < ADC_NUM_SAMPLES; i++) {
       result += read_bandgap();
@@ -57,7 +58,7 @@ namespace adc {
 
     result /= ADC_NUM_SAMPLES;
 
-    return (_ref_voltage * 1023L) / result;
+    return ((uint32_t) _ref_voltage * 1023) / result;
   }
 
   uint16_t read_temp() {
