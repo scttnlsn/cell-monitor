@@ -1,20 +1,22 @@
 # cell-monitor
 
-Battery cell monitor and balancer based on the ATTiny85 MCU.
+Battery cell monitor and balancer based on the AVR ATTiny85 MCU.
 
 * reads cell voltage and temperature
 * switches balancing FET
-* communicates with host controller via isolated serial protocol
+* communicates with a host controller via isolated serial
 * low power consumption (<1mA when idle, ~2mA while active)
 
-## Requirements
-
-* [avr-libc](http://www.nongnu.org/avr-libc/)
-* [avrdude](http://www.nongnu.org/avrdude/)
-* [pio](http://platformio.org)
-* [make](https://www.gnu.org/software/make/)
+A cell monitor is intended to monitor a single cell as part of a larger series pack.
+The cell monitor is powered directly from the cell it monitors and works with any chemistry
+where the voltage remains within 1.8V-5.5V (i.e. lithium-ion, LiFePO4).
 
 ## Build
+
+Dependencies:
+
+* [pio](http://platformio.org)
+* [make](https://www.gnu.org/software/make/)
 
 ```
 make
@@ -22,53 +24,94 @@ make fuse
 make flash
 ```
 
-## Config
+## Wiring
 
-Each cell monitor on a shared serial bus needs a unique 4-bit address.  To program the address for a given monitor, pass the `CELL_ADDRESS` environment variable when building:
-
-```
-make CELL_ADDRESS=1
-```
-
-The cell monitor uses an internal bandgap reference to measure the cell voltage.  The internal reference has a nominal value of 1100mV but by calibrating this value you'll get more accurate voltage readings.  Use the included `command.py` script to read the voltage of a cell monitor (replacing the address and port, if needed):
+Cell monitors are wired in a daisy chain with the TX from the host controller connected to
+the RX of cell monitor 1, the TX of cell monitor 1 connected to the RX of cell monitor 2, etc.
+The TX of cell monitor N is connected to the RX of the host controller.
 
 ```
-python ./scripts/command.py --port /dev/ttyUSB0 <address> 1
++-----------+
+| HOST   RX | <------------------------------------------+
+|        TX | >---+    +--->---+    +--->  ...  >---+    |
++-----------+     |    |       |    |               |    |
+                  |    |       |    |               |    |
+                +--------+   +--------+           +--------+
+                | RX  TX |   | RX  TX |    ...    | RX  TX |
+                |    1   |   |    2   |    ...    |    N   |
+                +--------+   +--------+    ...    +--------+
 ```
 
-You'll get back a cell voltage reading in mV.  Take an accurate reading of the actual cell voltage and plug both values into the following formula:
-
-```
-actual / reading * 1100
-```
-
-This value should be used as the internal reference voltage.  Pass the `REF_VOLTAGE` environment variable when building:
-
-```
-make REF_VOLTAGE=1100
-```
+Cell monitors are addressed by their position in the daisy chain.
 
 ## Serial protocol
 
-Commands are sent from a host controller to the cell monitor via a 9600 baud isolated serial line.  Multiple monitors can share a single serial bus since each monitor has a unique 4-bit address.  Each command includes the cell address bits and only the corresponding cell monitor will respond.
+The host controller initiates all communication with the network of cell monitors and does so at 9600 baud.
+The host controller sends a request packet which is forwarded through the daisy chain to an addressed cell
+monitor.  The addressed cell monitor will reply with a similar response packet which will be forwarded through
+the remaining chain and eventually read by the host controller.
 
-Each command byte includes a 4 bit cell address (CA) and a 4 bit command code (CC):
+#### Packet structure
 
-```
-| CA 4 | CA 3 | CA 2 | CA 1 | CC 4 | CC 3 | CC 2 | CC 1 |
-```
+Communication consists of 5 byte packets with the following structure:
 
-The command code consists of the following bits:
+| Byte  | 7     | 6     | 5     |    4  |    3  |    2  |    1  |     0 |
+| ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+| **1** | ADDR6 | ADDR5 | ADDR4 | ADDR3 | ADDR2 | ADDR1 | ADDR0 | REQ   |
+| **2** | REG6  | REG5  | REG4  | REG3  | REG2  | REG1  | REG0  | WRITE |
+| **3** | VAL15 | VAL14 | VAL13 | VAL12 | VAL11 | VAL10 | VAL9  | VAL8  |
+| **4** | VAL7  | VAL6  | VAL5  | VAL4  | VAL3  | VAL2  | VAL1  | VAL0  |
+| **5** | CRC7  | CRC6  | CRC5  | CRC4  | CRC3  | CRC2  | CRC1  | CRC0  |
 
-```
-| RSVD | BALANCE_ON | SEND_TEMP | SEND_VOLTAGE |
-```
+* **ADDR6-0** - cell monitor address
+* **REQ0** - 1 if packet is a request, 0 if packet is a response
+* **REG6-0** - register (described below)
+* **WRITE0** - 1 if packet is a write command, 0 if packet is a read command
+* **VAL15-0** - value
+* **CRC7-0** - CRC8 of prior 4 bytes
 
-* `SEND_VOLTAGE` - when set to `1` the cell monitor will reply with a 2-byte voltage in mV (most-significant byte first)
-* `SEND_TEMP` - when set to `1` the cell monitor will reply with a 2-byte temperature in degrees celcius * 100 (most-significant byte first)
-* `BALANCE_ON` - when set to `1` the cell monitor will switch on the balancing FET, when set to `0` the cell monitor will switch off the balancing FET
-* `RSVD` - reserved for future use
+#### Registers
 
-If you've set both the `SEND_TEMP` and `SEND_VOLTAGE` bits then you'll receive 4 bytes (voltage first and then temp).
+* `0x1` - cell address (1 byte, unsigned)
+* `0x2` - reference voltage (2 bytes, unsigned)
+* `0x3` - cell voltage (2 bytes, unsigned)
+* `0x4` - celsius temperature (2 bytes, signed)
+* `0x5` - balance (1 if balancing, 0 otherwise)
 
-The cell monitor has an internal watchdog that automatically turns off the balancing FET after 10 seconds.  If you'd like to balance for a longer period of time then you need to repeatedly send a command with the `BALANCE_ON` bit set to `1`.
+#### Example
+
+*Reading the voltage from cell 1*
+
+Request:
+
+| Byte | Value    |
+| ---- | -------- |
+| 1    | 00000011 |
+| 2    | 00000110 |
+| 3    | 00000000 |
+| 4    | 00000000 |
+| 5    | 11010110 |
+
+* `ADDR` = 1
+* `REQ` bit set to 1
+* `REG` = 3
+* `WRITE` bit set to 0
+* `VAL` is not applicable for read request
+* `CRC` = crc8(50724864)
+
+The following response will be received:
+
+| Byte | Value    |
+| ---- | -------- |
+| 1    | 00000010 |
+| 2    | 00000110 |
+| 3    | 00001100 |
+| 4    | 11100100 |
+| 5    | 01110111 |
+
+* `ADDR` = 1
+* `REQ` bit set to 0
+* `REG` = 3
+* `WRITE` bit set to 0
+* `VAL` is the returned voltage (3300mV in this example)
+* `CRC` = crc8(33950948)
