@@ -115,3 +115,30 @@ The following response will be received:
 * `WRITE` bit set to 0
 * `VAL` is the returned voltage (3300mV in this example)
 * `CRC` = crc8(33950948)
+
+#### Address assignment
+
+A cell monitor has an undefined address when it is initially powered on.  The host controller
+needs to initiate an address assignment request (which has slightly different semantics than
+other value requests):
+
+| Byte | Value    |
+| ---- | -------- |
+| 1    | 00000001 |
+| 2    | 00000011 |
+| 3    | 00000000 |
+| 4    | 00000001 |
+| 5    | 00110011 |
+
+* `ADDR` = 0 (broadcast to all cell monitors)
+* `REQ` bit set to 1
+* `REG` = 1
+* `WRITE` bit set to 1
+* `VAL` = first cell address
+* `CRC` = crc8(16973825)
+
+The first cell monitor will receive the request and set its address to the value in the `VAL` field.
+Instead of sending a response it will increment the `VAL` field and forward the request onward.
+Eventually the host controller will receive the same request packet (with an incremented `VAL`).
+The host controller should assert that `VAL` equals 1 more than the number of cell monitors in the
+network.
