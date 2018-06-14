@@ -64,9 +64,9 @@ Communication consists of 5 byte packets with the following structure:
 | **5** | CRC7  | CRC6  | CRC5  | CRC4  | CRC3  | CRC2  | CRC1  | CRC0  |
 
 * **ADDR6-0** - cell monitor address
-* **REQ0** - 1 if packet is a request, 0 if packet is a response
+* **REQ** - 1 if packet is a request, 0 if packet is a response
 * **REG6-0** - register (described below)
-* **WRITE0** - 1 if packet is a write command, 0 if packet is a read command
+* **WRITE** - 1 if packet is a write command, 0 if packet is a read command
 * **VAL15-0** - value
 * **CRC7-0** - CRC8 of prior 4 bytes
 
