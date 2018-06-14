@@ -64,7 +64,7 @@ void loop() {
 
         case REG_VOLTAGE:
           if (packet.write) {
-            adc::calibrate_voltage(packet.value);
+            // adc::calibrate_voltage(packet.value);
           }
           protocol.respond(&packet, adc::read_vcc());
           break;
