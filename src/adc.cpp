@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <avr/eeprom.h>
 
 #include "adc.h"
 #include "config.h"
