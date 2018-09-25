@@ -1,7 +1,9 @@
+# You may need to disable hangup-on-close for the serial port:
+#   stty -F <device> -hupcl
+
 import argparse
 from serial import Serial
 import struct
-import time
 
 ADDRESS_BROADCAST = 0x0
 
@@ -137,7 +139,6 @@ class CellMonitor(object):
 
 def connect(port):
     serial = Serial(port = port, baudrate = 9600, timeout=0.1)
-    time.sleep(2) # why do i need this?
 
     cell_monitor = CellMonitor(serial)
     cell_monitor.start()
