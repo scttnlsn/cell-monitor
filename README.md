@@ -126,10 +126,6 @@ A cell monitor has an undefined address when it is initially powered on.  The ho
 needs to initiate an address assignment request (which has slightly different semantics than
 other value requests):
 
-values = [
-  0b0000000100000001000000110000000000000001
-]
-
 | Byte | Value    |
 | ---- | -------- |
 | 1    | 00000001 |
