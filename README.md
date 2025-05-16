@@ -2,7 +2,7 @@
 
 Battery cell monitor and balancer based on the AVR ATTiny85 MCU.
 
-* reads cell voltage and temperature
+* reads cell voltage
 * switches balancing FET
 * communicates with a host controller via isolated serial
 * low power consumption (<1mA when idle, ~2mA while active)
@@ -57,12 +57,14 @@ Communication consists of 5 byte packets with the following structure:
 
 | Byte  | 7     | 6     | 5     |    4  |    3  |    2  |    1  |     0 |
 | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+| **1** | ID7   | ID6   | ID5   | ID4   | ID3   | ID2   | ID1   | ID0   |
 | **1** | ADDR6 | ADDR5 | ADDR4 | ADDR3 | ADDR2 | ADDR1 | ADDR0 | REQ   |
 | **2** | REG6  | REG5  | REG4  | REG3  | REG2  | REG1  | REG0  | WRITE |
 | **3** | VAL15 | VAL14 | VAL13 | VAL12 | VAL11 | VAL10 | VAL9  | VAL8  |
 | **4** | VAL7  | VAL6  | VAL5  | VAL4  | VAL3  | VAL2  | VAL1  | VAL0  |
 | **5** | CRC7  | CRC6  | CRC5  | CRC4  | CRC3  | CRC2  | CRC1  | CRC0  |
 
+* **ID** - packet ID
 * **ADDR6-0** - cell monitor address
 * **REQ** - 1 if packet is a request, 0 if packet is a response
 * **REG6-0** - register (described below)
@@ -73,10 +75,8 @@ Communication consists of 5 byte packets with the following structure:
 #### Registers
 
 * `0x1` - cell address (1 byte, unsigned)
-* `0x2` - reference voltage (2 bytes, unsigned)
-* `0x3` - cell voltage (2 bytes, unsigned)
-* `0x4` - celsius temperature (2 bytes, signed)
-* `0x5` - balance (1 if balancing, 0 otherwise)
+* `0x2` - cell voltage (2 bytes, unsigned)
+* `0x3` - balance (1 if balancing, 0 otherwise)
 
 #### Example
 
@@ -86,35 +86,39 @@ Request:
 
 | Byte | Value    |
 | ---- | -------- |
-| 1    | 00000011 |
-| 2    | 00000110 |
-| 3    | 00000000 |
+| 1    | 00000001 |
+| 2    | 00000011 |
+| 3    | 00000110 |
 | 4    | 00000000 |
-| 5    | 11010110 |
+| 5    | 00000000 |
+| 6    | 00100101 |
 
+* `ID` = 1
 * `ADDR` = 1
 * `REQ` bit set to 1
 * `REG` = 3
 * `WRITE` bit set to 0
 * `VAL` is not applicable for read request
-* `CRC` = crc8(50724864)
+* `CRC` = crc8(4345692160)
 
 The following response will be received:
 
 | Byte | Value    |
 | ---- | -------- |
+| 1    | 00000001 |
 | 1    | 00000010 |
 | 2    | 00000110 |
 | 3    | 00001100 |
 | 4    | 11100100 |
-| 5    | 01110111 |
+| 5    | 01111101 |
 
+* `ID` = 1
 * `ADDR` = 1
 * `REQ` bit set to 0
 * `REG` = 3
 * `WRITE` bit set to 0
 * `VAL` is the returned voltage (3300mV in this example)
-* `CRC` = crc8(33950948)
+* `CRC` = crc8(4328918244)
 
 #### Address assignment
 
@@ -122,20 +126,26 @@ A cell monitor has an undefined address when it is initially powered on.  The ho
 needs to initiate an address assignment request (which has slightly different semantics than
 other value requests):
 
+values = [
+  0b0000000100000001000000110000000000000001
+]
+
 | Byte | Value    |
 | ---- | -------- |
 | 1    | 00000001 |
-| 2    | 00000011 |
-| 3    | 00000000 |
-| 4    | 00000001 |
-| 5    | 00110011 |
+| 2    | 00000001 |
+| 3    | 00000011 |
+| 4    | 00000000 |
+| 5    | 00000001 |
+| 6    | 11001110 |
 
+* `ID` = 1
 * `ADDR` = 0 (broadcast to all cell monitors)
 * `REQ` bit set to 1
 * `REG` = 1
 * `WRITE` bit set to 1
 * `VAL` = first cell address
-* `CRC` = crc8(16973825)
+* `CRC` = crc8(4311941121)
 
 The first cell monitor will receive the request and set its address to the value in the `VAL` field.
 Instead of sending a response it will increment the `VAL` field and forward the request onward.

@@ -6,12 +6,11 @@
 #define ADDRESS_BROADCAST 0x0
 
 #define REG_ADDRESS 0x1
-#define REG_VOLTAGE_REF 0x2
-#define REG_VOLTAGE 0x3
-#define REG_TEMP 0x4
-#define REG_BALANCE 0x5
+#define REG_VOLTAGE 0x2
+#define REG_BALANCE 0x3
 
 typedef struct {
+  uint8_t id;
   uint8_t address;
   uint8_t request;
   uint8_t reg;

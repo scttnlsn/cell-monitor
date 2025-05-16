@@ -53,8 +53,9 @@ void Protocol::respond(packet_t *packet, uint16_t value) {
   forward(packet);
 }
 
-// 4 byte packet structure (msb to lsb):
+// 5 byte packet structure (msb to lsb):
 //
+// id (8 bits)
 // address (7 bits)
 // request=1/response=0 flag (1 bit)
 // reg (7 bits)
@@ -62,16 +63,18 @@ void Protocol::respond(packet_t *packet, uint16_t value) {
 // value (16 bits)
 
 void decode(uint8_t *buffer, packet_t *packet) {
-  packet->address = buffer[0] >> 1;
-  packet->request = buffer[0] & 0x1;
-  packet->reg = buffer[1] >> 1;
-  packet->write = buffer[1] & 0x1;
-  packet->value = (buffer[2] << 8) | buffer[3];
+  packet->id = buffer[0];
+  packet->address = buffer[1] >> 1;
+  packet->request = buffer[1] & 0x1;
+  packet->reg = buffer[2] >> 1;
+  packet->write = buffer[2] & 0x1;
+  packet->value = (buffer[3] << 8) | buffer[4];
 }
 
 void encode(uint8_t *buffer, packet_t *packet) {
-  buffer[0] = (packet->address << 1) | (packet->request & 0x1);
-  buffer[1] = (packet->reg << 1) | (packet->write & 0x1);
-  buffer[2] = packet->value >> 8;
-  buffer[3] = packet->value & 0xFF;
+  buffer[0] = packet->id;
+  buffer[1] = (packet->address << 1) | (packet->request & 0x1);
+  buffer[2] = (packet->reg << 1) | (packet->write & 0x1);
+  buffer[3] = packet->value >> 8;
+  buffer[4] = packet->value & 0xFF;
 }

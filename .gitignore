@@ -1,5 +1,8 @@
+.pio
 .pioenvs
 .piolibdeps
 .python-version
+.venv
+__pycache__
 
 hardware/*bak

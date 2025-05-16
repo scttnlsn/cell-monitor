@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <Stream.h>
 
-#define PACKET_LENGTH 4 // not including trailing CRC byte
+#define PACKET_LENGTH 5 // not including trailing CRC byte
 #define TIMEOUT 500 // ms
 
 class Communication {
