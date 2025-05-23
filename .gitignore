@@ -6,3 +6,6 @@
 __pycache__
 
 hardware/*bak
+hardware/cell-monitor-backups
+hardware/rescue-backup
+hardware/fp-info-cache

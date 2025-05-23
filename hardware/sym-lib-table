@@ -1,0 +1,5 @@
+(sym_lib_table
+  (version 0)
+  (lib (name "cell-monitor-rescue")(type "Legacy")(uri "${KIPRJMOD}/cell-monitor-rescue.lib")(options "")(descr ""))
+  (lib (name "cell-monitor")(type "Legacy")(uri "${KIPRJMOD}/cell-monitor.lib")(options "")(descr ""))
+)
